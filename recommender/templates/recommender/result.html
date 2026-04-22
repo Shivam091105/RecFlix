@@ -1,544 +1,688 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Movie recommendations for {{ input_movie_name }}">
-    <title>Recommendations for {{ input_movie_name }} | Movie Recommendation System</title>
-    
+    <title>Recommendations for {{ input_movie_name }}</title>
     <link rel="shortcut icon" href="{% static 'logo.ico' %}">
-    
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border-box
         }
 
         :root {
-            --primary-color: #6366f1;
+            --primary: #6366f1;
             --primary-dark: #4f46e5;
-            --secondary-color: #8b5cf6;
-            --background: #0f172a;
+            --secondary: #8b5cf6;
+            --bg: #0f172a;
             --surface: #1e293b;
             --surface-light: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
+            --text: #f1f5f9;
+            --muted: #cbd5e1;
             --success: #10b981;
-            --border-radius: 12px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --warn: #f59e0b;
+            --radius: 12px;
+            --ease: all 0.3s cubic-bezier(.4, 0, .2, 1);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--background) 0%, #1a1f3a 100%);
-            color: var(--text-primary);
-            min-height: 100vh;
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #1a1f3a 100%);
+            color: var(--text);
+            min-height: 100vh
         }
 
-        /* Animated background */
-        .background-animation {
+        .bg-anim {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             z-index: -1;
-            opacity: 0.05;
+            opacity: .04;
+            pointer-events: none
         }
 
-        .background-animation::before {
+        .bg-anim::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
+            inset: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, var(--primary-color) 1px, transparent 1px);
+            background: radial-gradient(circle, var(--primary) 1px, transparent 1px);
             background-size: 50px 50px;
-            animation: backgroundMove 20s linear infinite;
+            animation: bgMove 20s linear infinite
         }
 
-        @keyframes backgroundMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
+        @keyframes bgMove {
+            to {
+                transform: translate(50px, 50px)
+            }
         }
 
-        /* Header */
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* ── Header ── */
         .header {
             background: var(--surface);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            padding: 1.25rem 2rem;
             position: sticky;
             top: 0;
             z-index: 100;
             backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .2)
         }
 
-        .header-content {
+        .header-inner {
             max-width: 1200px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 1rem;
-            flex-wrap: wrap;
+            flex-wrap: wrap
         }
 
-        .logo-link {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
-            color: var(--text-primary);
+        .brand {
             font-weight: 600;
-            transition: var(--transition);
+            text-decoration: none;
+            color: var(--text)
         }
 
-        .logo-link:hover {
-            color: var(--primary-color);
-        }
-
-        .logo-small {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-
-        .back-button {
+        .back-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--primary-color);
-            color: white;
+            gap: .4rem;
+            padding: .65rem 1.25rem;
+            background: var(--primary);
+            color: #fff;
             text-decoration: none;
-            border-radius: var(--border-radius);
+            border-radius: var(--radius);
             font-weight: 500;
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
+            transition: var(--ease)
         }
 
-        .back-button:hover {
+        .back-btn:hover {
             background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px)
         }
 
-        /* Results Header */
-        .results-header {
+        /* ── Results header ── */
+        .results-hd {
             text-align: center;
-            padding: 3rem 2rem;
-            animation: fadeInDown 0.6s ease-out;
+            padding: 2.5rem 1.5rem 1.5rem;
+            animation: fadeDown .6s both
         }
 
-        .results-title {
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            font-weight: 700;
-            margin-bottom: 0.5rem;
+        .results-hd h1 {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 700
         }
 
-        .searched-movie {
-            color: var(--primary-color);
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            background: rgba(99, 102, 241, 0.1);
-            border-radius: 8px;
+        .movie-name-hl {
+            color: var(--primary);
+            background: rgba(99, 102, 241, .1);
+            padding: .2rem .7rem;
+            border-radius: 8px
         }
 
-        .results-subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-top: 0.5rem;
+        .results-hd .sub {
+            color: var(--muted);
+            margin-top: .4rem;
+            font-size: 1rem
         }
 
-        /* Container */
+        /* auto-correct notice */
+        .autocorrect-notice {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: rgba(245, 158, 11, .1);
+            border: 1px solid var(--warn);
+            border-radius: var(--radius);
+            padding: .5rem 1rem;
+            margin-top: .75rem;
+            font-size: .875rem;
+            color: #fcd34d
+        }
+
+        /* ── Container ── */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem 1rem 4rem;
+            padding: 1.5rem 1rem 4rem
         }
 
-        /* Movie Grid */
-        .movies-grid {
+        /* ── Movie grid ── */
+        .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
-            animation: fadeInUp 0.6s ease-out 0.2s both;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 1.4rem;
+            animation: fadeUp .6s .15s both
         }
 
-        /* Movie Card */
-        .movie-card {
+        /* ── Movie card ── */
+        .card {
             background: var(--surface);
-            border-radius: var(--border-radius);
-            padding: 1.75rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: var(--transition);
+            border-radius: var(--radius);
+            padding: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, .08);
+            transition: var(--ease);
             position: relative;
             overflow: hidden;
+            opacity: 0;
+            transform: translateY(24px)
         }
 
-        .movie-card::before {
+        .card.show {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        .card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             transform: scaleX(0);
             transform-origin: left;
-            transition: var(--transition);
+            transition: var(--ease)
         }
 
-        .movie-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--primary-color);
-            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.2);
+        .card:hover {
+            transform: translateY(-7px) !important;
+            border-color: var(--primary);
+            box-shadow: 0 14px 40px rgba(99, 102, 241, .2)
         }
 
-        .movie-card:hover::before {
-            transform: scaleX(1);
+        .card:hover::before {
+            transform: scaleX(1)
         }
 
-        .movie-rank {
+        .rank {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            top: .9rem;
+            right: .9rem;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            font-size: .85rem;
+            box-shadow: 0 3px 10px rgba(99, 102, 241, .35)
         }
 
-        .movie-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            display: block;
+        .card-icon {
+            font-size: 1.8rem;
+            margin-bottom: .75rem;
+            display: block
         }
 
-        .movie-title {
-            font-size: 1.25rem;
+        .card-title {
+            font-size: 1.15rem;
             font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            line-height: 1.4;
-            padding-right: 50px;
+            margin-bottom: .9rem;
+            padding-right: 44px;
+            line-height: 1.4
         }
 
-        .movie-details {
+        .meta {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            margin-bottom: 1.25rem;
+            gap: .4rem;
+            margin-bottom: 1.1rem
         }
 
-        .movie-detail {
+        .meta-row {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
+            gap: .5rem;
+            font-size: .875rem;
+            color: var(--muted)
         }
 
-        .detail-icon {
-            width: 20px;
+        .meta-icon {
+            width: 18px;
             text-align: center;
+            flex-shrink: 0
         }
 
-        .movie-actions {
+        /* genre badges */
+        .genre-badges {
             display: flex;
-            gap: 0.75rem;
             flex-wrap: wrap;
+            gap: .35rem;
+            margin-top: .2rem
         }
 
-        .movie-link {
+        .badge {
+            padding: .2rem .65rem;
+            background: rgba(99, 102, 241, .15);
+            border: 1px solid rgba(99, 102, 241, .3);
+            border-radius: 99px;
+            font-size: .75rem;
+            color: #c7d2fe
+        }
+
+        .actions {
+            display: flex;
+            gap: .65rem;
+            flex-wrap: wrap
+        }
+
+        .action-btn {
             flex: 1;
-            min-width: 120px;
+            min-width: 110px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.25rem;
-            border-radius: var(--border-radius);
+            gap: .4rem;
+            padding: .7rem 1rem;
+            border-radius: var(--radius);
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.9rem;
-            transition: var(--transition);
-            border: 2px solid;
+            font-size: .875rem;
+            transition: var(--ease);
+            border: 2px solid
         }
 
-        .link-primary {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-            color: white;
+        .btn-google {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff
         }
 
-        .link-primary:hover {
+        .btn-google:hover {
             background: var(--primary-dark);
             border-color: var(--primary-dark);
-            transform: translateY(-2px);
+            transform: translateY(-2px)
         }
 
-        .link-secondary {
+        .btn-imdb {
             background: transparent;
             border-color: var(--surface-light);
-            color: var(--text-secondary);
+            color: var(--muted)
         }
 
-        .link-secondary:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
+        .btn-imdb:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px)
+        }
+
+        /* ── Genre search panel (same as index) ── */
+        .genre-section {
+            margin-top: 3rem;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            border: 1px solid rgba(255, 255, 255, .08)
+        }
+
+        .genre-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.1rem
+        }
+
+        .genre-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-bottom: 1rem
+        }
+
+        .genre-btn {
+            padding: .4rem .9rem;
+            border-radius: 99px;
+            font-size: .82rem;
+            cursor: pointer;
+            font-family: inherit;
+            border: 1.5px solid var(--surface-light);
+            background: transparent;
+            color: var(--muted);
+            transition: var(--ease)
+        }
+
+        .genre-btn:hover,
+        .genre-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, .1)
+        }
+
+        .rating-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: .875rem;
+            color: var(--muted)
+        }
+
+        .rating-row select {
+            padding: .35rem .65rem;
+            background: var(--bg);
+            border: 1.5px solid var(--surface-light);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit
+        }
+
+        .btn-genre-search {
+            padding: .8rem;
+            font-size: .9rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+            transition: var(--ease)
+        }
+
+        .btn-genre-search:hover {
             transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, .3)
         }
 
-        /* Footer */
-        .footer {
+        .btn-genre-search:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none
+        }
+
+        #genreResults {
+            margin-top: 1.4rem;
+            display: none
+        }
+
+        #genreResults h3 {
+            font-size: .95rem;
+            font-weight: 600;
+            margin-bottom: .9rem;
+            color: var(--muted)
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+            gap: 1rem
+        }
+
+        .mini-card {
+            background: var(--bg);
+            border: 1px solid var(--surface-light);
+            border-radius: var(--radius);
+            padding: 1rem;
+            transition: var(--ease)
+        }
+
+        .mini-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px)
+        }
+
+        .mini-title {
+            font-weight: 600;
+            margin-bottom: .45rem;
+            font-size: .9rem
+        }
+
+        .mini-meta {
+            font-size: .78rem;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: .18rem
+        }
+
+        .mini-actions {
+            display: flex;
+            gap: .45rem;
+            margin-top: .65rem
+        }
+
+        .mini-link {
+            flex: 1;
+            padding: .4rem;
+            font-size: .78rem;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--ease)
+        }
+
+        .ml-primary {
+            background: var(--primary);
+            color: #fff
+        }
+
+        .ml-primary:hover {
+            background: var(--primary-dark)
+        }
+
+        .ml-secondary {
+            border: 1px solid var(--surface-light);
+            color: var(--muted)
+        }
+
+        .ml-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary)
+        }
+
+        footer {
             text-align: center;
             padding: 2rem 1rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--muted);
+            font-size: .82rem;
+            border-top: 1px solid rgba(255, 255, 255, .07)
         }
 
-        /* Animations */
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Scroll-based animation for cards */
-        .movie-card {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-        }
-
-        .movie-card.animate-in {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        @keyframes cardAppear {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
+        @media(max-width:640px) {
             .header {
-                padding: 1rem;
+                padding: 1rem
             }
 
-            .header-content {
-                justify-content: center;
+            .grid {
+                grid-template-columns: 1fr
             }
 
-            .results-header {
-                padding: 2rem 1rem;
+            .actions {
+                flex-direction: column
             }
-
-            .movies-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .movie-card {
-                padding: 1.5rem;
-            }
-
-            .movie-actions {
-                flex-direction: column;
-            }
-
-            .movie-link {
-                width: 100%;
-            }
-        }
-
-        /* No results state */
-        .no-results {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-secondary);
-        }
-
-        .no-results-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
         }
     </style>
 </head>
-<body>
-    <div class="background-animation"></div>
 
-    <!-- Header -->
+<body>
+    <div class="bg-anim"></div>
+
     <header class="header">
-        <div class="header-content">
-            <a href="/" class="logo-link">
-                <span>Movie Recommendation System</span>
-            </a>
-            <a href="/" class="back-button">
-                ← New Search
-            </a>
+        <div class="header-inner">
+            <a href="/" class="brand">🎬 Movie Recommendation System</a>
+            <a href="/" class="back-btn">← New Search</a>
         </div>
     </header>
 
-    <!-- Results Header -->
-    <div class="results-header">
-        <h1 class="results-title">
-            Movies like <span class="searched-movie">{{ input_movie_name }}</span>
-        </h1>
-        {% if source_movie %}
-        <p class="results-subtitle">
-            {{ source_movie.production }} | {{ source_movie.rating }} | {{ source_movie.genres }}
-        </p>
+    <div class="results-hd">
+        <h1>Movies like <span class="movie-name-hl">{{ input_movie_name }}</span></h1>
+        {% if auto_corrected %}
+        <div class="autocorrect-notice">⚡ Auto-corrected from "{{ original_query }}" → "{{ input_movie_name }}"</div>
         {% endif %}
-        <p class="results-subtitle">
-            We found {{ total_recommendations|default:"15" }} amazing recommendations for you
-        </p>
+        {% if source_movie %}
+        <p class="sub">{{ source_movie.production }} &nbsp;|&nbsp; {{ source_movie.rating }} &nbsp;|&nbsp; {{
+            source_movie.genres }}</p>
+        {% endif %}
+        <p class="sub">{{ total_recommendations }} recommendations found</p>
     </div>
 
-    <!-- Main Content -->
     <main class="container">
         {% if recommended_movies %}
-        <div class="movies-grid">
+        <div class="grid">
             {% for movie in recommended_movies %}
-            <article class="movie-card">
-                <div class="movie-rank">{{ forloop.counter }}</div>
-                <span class="movie-icon">🎬</span>
-                
-                <h2 class="movie-title">{{ movie.title }}</h2>
-                
-                <div class="movie-details">
-                    <div class="movie-detail">
-                        <span class="detail-icon">⭐</span>
-                        <span>{{ movie.rating }} ({{ movie.votes }} votes)</span>
-                    </div>
-                    <div class="movie-detail">
-                        <span class="detail-icon">📅</span>
-                        <span>{{ movie.release_date }}</span>
-                    </div>
-                    <div class="movie-detail">
-                        <span class="detail-icon">🎭</span>
+            <article class="card">
+                <div class="rank">{{ forloop.counter }}</div>
+                <span class="card-icon">🎬</span>
+                <h2 class="card-title">{{ movie.title }}</h2>
+                <div class="meta">
+                    <div class="meta-row"><span class="meta-icon">⭐</span><span>{{ movie.rating }}</span></div>
+                    <div class="meta-row"><span class="meta-icon">📅</span><span>{{ movie.release_date }}</span></div>
+                    <div class="meta-row">
+                        <span class="meta-icon">🎭</span>
                         <span>{{ movie.genres }}</span>
                     </div>
-                    <div class="movie-detail">
-                        <span class="detail-icon">🏢</span>
-                        <span>{{ movie.production }}</span>
-                    </div>
+                    <div class="meta-row"><span class="meta-icon">🏢</span><span>{{ movie.production }}</span></div>
                 </div>
-
-                <div class="movie-actions">
-                    <a href="{{ movie.google_link }}" target="_blank" rel="noopener noreferrer" class="movie-link link-primary">
-                        🔍 Google
-                    </a>
+                <div class="actions">
+                    <a href="{{ movie.google_link }}" target="_blank" rel="noopener" class="action-btn btn-google">🔍
+                        Google</a>
                     {% if movie.imdb_link %}
-                    <a href="{{ movie.imdb_link }}" target="_blank" rel="noopener noreferrer" class="movie-link link-secondary">
-                        ⭐ IMDb
-                    </a>
+                    <a href="{{ movie.imdb_link }}" target="_blank" rel="noopener" class="action-btn btn-imdb">⭐
+                        IMDb</a>
                     {% endif %}
                 </div>
             </article>
             {% endfor %}
         </div>
         {% else %}
-        <div class="no-results">
-            <div class="no-results-icon">😕</div>
+        <div style="text-align:center;padding:4rem;color:var(--muted)">
+            <div style="font-size:3rem;margin-bottom:1rem">😕</div>
             <h2>No recommendations found</h2>
-            <p>We couldn't find any recommendations for this movie. Please try another one.</p>
+            <p>Try searching for a different title.</p>
+        </div>
+        {% endif %}
+
+        <!-- ── Genre search ── -->
+        {% if all_genres %}
+        <div class="genre-section">
+            <h2>🎭 Not satisfied? Browse by Genre</h2>
+            <div class="genre-filters" id="genreChips">
+                {% for g in all_genres %}
+                <button class="genre-btn" data-genre="{{ g }}">{{ g }}</button>
+                {% endfor %}
+            </div>
+            <div class="rating-row">
+                <label>Min rating:</label>
+                <select id="minRating">
+                    <option value="0">Any</option>
+                    <option value="5">5+</option>
+                    <option value="6">6+</option>
+                    <option value="7">7+</option>
+                    <option value="8">8+</option>
+                </select>
+                <span style="margin-left:auto;color:var(--primary);font-size:.85rem" id="selGenreLabel"></span>
+            </div>
+            <button class="btn-genre-search" id="genreSearchBtn" disabled>Select a genre above</button>
+            <div id="genreResults">
+                <h3 id="genreResultsTitle"></h3>
+                <div class="mini-grid" id="genreGrid"></div>
+            </div>
         </div>
         {% endif %}
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>Made with ❤️ for movie lovers | © <span id="currentYear"></span> Movie Recommendation System</p>
+    <footer>
+        <p>Made with ❤️ for movie lovers &nbsp;|&nbsp; © <span id="yr"></span> Movie Recommendation System</p>
     </footer>
-    <script>
-        // Set dynamic year in footer
-        document.addEventListener("DOMContentLoaded", function() {
-            var currentYear = new Date().getFullYear();
-            document.getElementById("currentYear").textContent = currentYear;
-        });
-    </script>
 
     <script>
-        // Smooth scroll to top
+        document.getElementById('yr').textContent = new Date().getFullYear();
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Scroll-based animation for cards
-        const observerOptions = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.1
-        };
+        // ── Card reveal animation ──────────────────────────────────────────────────
+        const obs = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); } });
+        }, { threshold: .08 });
+        document.querySelectorAll('.card').forEach((c, i) => {
+            c.style.transitionDelay = (i * 40) + 'ms';
+            obs.observe(c);
+        });
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-in');
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        // Observe all movie cards
-        document.addEventListener('DOMContentLoaded', () => {
-            const cards = document.querySelectorAll('.movie-card');
-            cards.forEach(card => {
-                observer.observe(card);
+        // ── Genre search ──────────────────────────────────────────────────────────
+        let selGenre = null;
+        document.querySelectorAll('.genre-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selGenre = this.dataset.genre;
+                document.getElementById('selGenreLabel').textContent = selGenre;
+                const sb = document.getElementById('genreSearchBtn');
+                sb.disabled = false; sb.textContent = 'Show ' + selGenre + ' Movies';
             });
         });
 
-        // Add interactive feedback
-        document.querySelectorAll('.movie-card').forEach(card => {
-            card.addEventListener('click', function(e) {
-                if (e.target.tagName !== 'A') {
-                    this.style.transform = 'scale(0.98) translateY(0)';
-                    setTimeout(() => {
-                        this.style.transform = '';
-                    }, 100);
-                }
-            });
+        document.getElementById('genreSearchBtn')?.addEventListener('click', function () {
+            if (!selGenre) return;
+            const minR = document.getElementById('minRating').value;
+            this.textContent = 'Loading…'; this.disabled = true;
+            fetch(`/api/genre-search/?genre=${encodeURIComponent(selGenre)}&n=24&min_rating=${minR}`)
+                .then(r => r.json()).then(data => {
+                    const grid = document.getElementById('genreGrid');
+                    const results = document.getElementById('genreResults');
+                    grid.innerHTML = '';
+                    if (!data.movies || !data.movies.length) {
+                        grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1">No movies found for this filter.</p>';
+                    } else {
+                        document.getElementById('genreResultsTitle').textContent = `Top ${data.movies.length} ${selGenre} movies`;
+                        data.movies.forEach(m => {
+                            const imdb = m.imdb_link ? `<a href="${m.imdb_link}" target="_blank" class="mini-link ml-secondary">⭐ IMDb</a>` : '';
+                            grid.innerHTML += `<div class="mini-card">
+                        <div class="mini-title">${m.title}</div>
+                        <div class="mini-meta">
+                            <span>⭐ ${m.rating} &nbsp;(${m.votes} votes)</span>
+                            <span>📅 ${m.release_date}</span>
+                            <span>🎭 ${m.genres}</span>
+                        </div>
+                        <div class="mini-actions">
+                            <a href="${m.google_link}" target="_blank" class="mini-link ml-primary">🔍 Google</a>${imdb}
+                        </div>
+                    </div>`;
+                        });
+                    }
+                    results.style.display = 'block';
+                    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }).catch(() => alert('Genre search failed.'))
+                .finally(() => { this.disabled = false; this.textContent = 'Show ' + selGenre + ' Movies'; });
         });
     </script>
 </body>
+
 </html>

@@ -1,694 +1,879 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Discover your next favorite movie with our AI-powered recommendation system. Get personalized movie suggestions based on your preferences.">
-    <meta name="keywords" content="movie recommendations, film suggestions, movie finder, AI recommendations">
-    <meta name="author" content="Movie Recommendation System">
-    
-    <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="Movie Recommendation System">
-    <meta property="og:description" content="Discover your next favorite movie with our AI-powered recommendation system">
-    <meta property="og:type" content="website">
-    
+    <title>Movie Recommendation System</title>
     <link rel="shortcut icon" href="{% static 'logo.ico' %}">
-    <title>Movie Recommendation System - Find Your Next Favorite Film</title>
-    
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- jQuery UI for autocomplete -->
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    
     <style>
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border-box
         }
 
         :root {
-            --primary-color: #6366f1;
+            --primary: #6366f1;
             --primary-dark: #4f46e5;
-            --secondary-color: #8b5cf6;
-            --background: #0f172a;
+            --secondary: #8b5cf6;
+            --bg: #0f172a;
             --surface: #1e293b;
             --surface-light: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
+            --text: #f1f5f9;
+            --muted: #cbd5e1;
             --error: #ef4444;
             --success: #10b981;
-            --border-radius: 12px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius: 12px;
+            --ease: all 0.3s cubic-bezier(.4, 0, .2, 1);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--background) 0%, #1a1f3a 100%);
-            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #1a1f3a 100%);
+            color: var(--text);
             min-height: 100vh;
-            line-height: 1.6;
-            overflow-x: hidden;
+            overflow-x: hidden
         }
 
-        /* Animated background */
-        .background-animation {
+        .bg-anim {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             z-index: -1;
-            opacity: 0.1;
+            opacity: .07;
+            pointer-events: none
         }
 
-        .background-animation::before {
+        .bg-anim::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
+            inset: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, var(--primary-color) 1px, transparent 1px);
+            background: radial-gradient(circle, var(--primary) 1px, transparent 1px);
             background-size: 50px 50px;
-            animation: backgroundMove 20s linear infinite;
+            animation: bgMove 20s linear infinite
         }
 
-        @keyframes backgroundMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(50px, 50px); }
+        @keyframes bgMove {
+            to {
+                transform: translate(50px, 50px)
+            }
         }
 
-        /* Header */
-        .header {
-            padding: 2rem 1rem;
+        /* ── Loading overlay ── */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .98);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity .5s
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none
+        }
+
+        .overlay-box {
             text-align: center;
-            position: relative;
+            max-width: 420px;
+            padding: 2rem
         }
 
-        .logo-container {
+        .overlay-icon {
+            font-size: 4rem;
+            animation: bounce 1s ease-in-out infinite
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-18px)
+            }
+        }
+
+        .overlay h2 {
+            font-size: 1.5rem;
+            margin: .75rem 0 .5rem
+        }
+
+        .overlay p {
+            color: var(--muted);
+            margin-bottom: 1.5rem
+        }
+
+        .progress-track {
+            height: 8px;
+            background: var(--surface);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-bottom: .75rem
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 99px;
+            transition: width .3s;
+            box-shadow: 0 0 10px rgba(99, 102, 241, .5)
+        }
+
+        .progress-label {
+            font-size: .9rem;
+            color: var(--muted)
+        }
+
+        .spinner {
             display: inline-block;
-            margin-bottom: 1rem;
-            animation: fadeInDown 0.8s ease-out;
+            width: 16px;
+            height: 16px;
+            border: 2.5px solid rgba(99, 102, 241, .3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            vertical-align: middle;
+            margin-left: .4rem
         }
 
-        .logo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* ── Main ── */
+        .main-wrap {
+            opacity: 0;
+            transition: opacity .5s
+        }
+
+        .main-wrap.visible {
+            opacity: 1
+        }
+
+        header {
+            padding: 2.5rem 1rem 1rem;
+            text-align: center
         }
 
         h1 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-size: clamp(2rem, 5vw, 3.2rem);
             font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: fadeInDown 0.8s ease-out 0.2s both;
+            animation: fadeDown .7s both
         }
 
         .subtitle {
-            font-size: clamp(1rem, 2vw, 1.25rem);
-            color: var(--text-secondary);
-            font-weight: 400;
-            animation: fadeInDown 0.8s ease-out 0.4s both;
+            color: var(--muted);
+            margin-top: .4rem;
+            animation: fadeDown .7s .15s both
         }
 
         .stats {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: .5rem;
             background: var(--surface);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            animation: fadeInUp 0.8s ease-out 0.6s both;
+            padding: .4rem 1.2rem;
+            border-radius: 99px;
+            margin-top: .75rem;
+            font-size: .875rem;
+            animation: fadeDown .7s .3s both
         }
 
-        .stats-dot {
+        .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: var(--success);
-            animation: pulse 2s ease-in-out infinite;
+            animation: pulse 2s infinite
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .4
+            }
         }
 
-        /* Main Container */
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-18px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
         .container {
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto;
-            padding: 2rem 1rem;
-            animation: fadeInUp 0.8s ease-out 0.8s both;
+            padding: 1.5rem 1rem 4rem;
+            animation: fadeUp .7s .4s both
         }
 
-        /* Search Card */
-        .search-card {
+        /* ── Search card ── */
+        .card {
             background: var(--surface);
-            border-radius: var(--border-radius);
-            padding: 2.5rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            padding: 2.25rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+            border: 1px solid rgba(255, 255, 255, .08)
         }
 
-        .search-label {
-            display: block;
-            font-size: 1rem;
+        .card-label {
             font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
+            margin-bottom: .85rem;
+            display: block
         }
 
-        .search-container {
-            position: relative;
-            margin-bottom: 1.5rem;
-        }
-
-        .search-input {
+        .input {
             width: 100%;
-            padding: 1rem 1.25rem;
+            padding: .9rem 1.1rem;
             font-size: 1rem;
             border: 2px solid var(--surface-light);
-            border-radius: var(--border-radius);
-            background: var(--background);
-            color: var(--text-primary);
-            transition: var(--transition);
+            border-radius: var(--radius);
+            background: var(--bg);
+            color: var(--text);
             font-family: inherit;
+            transition: var(--ease)
         }
 
-        .search-input:focus {
+        .input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .12)
         }
 
-        .search-input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.7;
+        .input::placeholder {
+            color: var(--muted);
+            opacity: .7
         }
 
-        .search-button {
+        .btn {
             width: 100%;
-            padding: 1rem 2rem;
+            padding: .95rem;
             font-size: 1rem;
             font-weight: 600;
-            color: white;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             border: none;
-            border-radius: var(--border-radius);
+            border-radius: var(--radius);
             cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            transition: var(--ease);
             font-family: inherit;
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, .3)
         }
 
-        .search-button:hover {
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, .4)
         }
 
-        .search-button:active {
-            transform: translateY(0);
-        }
-
-        /* Alert Messages */
+        /* ── Alerts ── */
         .alert {
-            padding: 1rem 1.25rem;
-            border-radius: var(--border-radius);
-            margin-top: 1.5rem;
+            padding: .9rem 1.1rem;
+            border-radius: var(--radius);
+            margin-top: 1.25rem;
             border-left: 4px solid;
-            animation: slideIn 0.3s ease-out;
+            animation: fadeUp .3s
         }
 
         .alert-error {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, .08);
             border-color: var(--error);
-            color: #fca5a5;
+            color: #fca5a5
         }
 
-        .alert-icon {
-            display: inline-block;
-            margin-right: 0.5rem;
+        .alert-info {
+            background: rgba(99, 102, 241, .08);
+            border-color: var(--primary);
+            color: #c7d2fe
         }
 
-        /* jQuery UI Autocomplete Styling */
+        /* ── Fuzzy suggestions ── */
+        .suggestions-box {
+            margin-top: 1.25rem;
+            background: var(--bg);
+            border: 1px solid var(--surface-light);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem
+        }
+
+        .suggestions-box h3 {
+            font-size: .875rem;
+            color: var(--muted);
+            margin-bottom: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem
+        }
+
+        .chip {
+            padding: .4rem .9rem;
+            background: var(--surface);
+            border: 1px solid var(--surface-light);
+            border-radius: 99px;
+            font-size: .875rem;
+            color: var(--text);
+            cursor: pointer;
+            transition: var(--ease);
+            text-decoration: none
+        }
+
+        .chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, .08)
+        }
+
+        .chip .score {
+            font-size: .75rem;
+            color: var(--muted);
+            margin-left: .3rem
+        }
+
+        /* ── Genre search panel ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            color: var(--muted);
+            font-size: .875rem
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--surface-light)
+        }
+
+        .genre-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, .08)
+        }
+
+        .genre-card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem
+        }
+
+        .genre-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-bottom: 1.25rem
+        }
+
+        .genre-btn {
+            padding: .4rem .9rem;
+            border-radius: 99px;
+            font-size: .85rem;
+            cursor: pointer;
+            font-family: inherit;
+            border: 1.5px solid var(--surface-light);
+            background: transparent;
+            color: var(--muted);
+            transition: var(--ease)
+        }
+
+        .genre-btn:hover,
+        .genre-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, .1)
+        }
+
+        .rating-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            font-size: .9rem;
+            color: var(--muted)
+        }
+
+        .rating-row select {
+            padding: .4rem .7rem;
+            background: var(--bg);
+            border: 1.5px solid var(--surface-light);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        .rating-row select:focus {
+            outline: none;
+            border-color: var(--primary)
+        }
+
+        .btn-genre {
+            padding: .8rem;
+            font-size: .95rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+            transition: var(--ease);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, .3)
+        }
+
+        .btn-genre:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, .4)
+        }
+
+        .btn-genre:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none
+        }
+
+        /* ── Genre results ── */
+        #genreResults {
+            margin-top: 1.5rem;
+            display: none
+        }
+
+        #genreResults h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--muted)
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem
+        }
+
+        .mini-card {
+            background: var(--bg);
+            border: 1px solid var(--surface-light);
+            border-radius: var(--radius);
+            padding: 1.1rem;
+            transition: var(--ease)
+        }
+
+        .mini-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px)
+        }
+
+        .mini-title {
+            font-weight: 600;
+            margin-bottom: .5rem;
+            font-size: .95rem
+        }
+
+        .mini-meta {
+            font-size: .8rem;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: .2rem
+        }
+
+        .mini-actions {
+            display: flex;
+            gap: .5rem;
+            margin-top: .75rem
+        }
+
+        .mini-link {
+            flex: 1;
+            padding: .45rem;
+            font-size: .8rem;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--ease)
+        }
+
+        .ml-primary {
+            background: var(--primary);
+            color: #fff
+        }
+
+        .ml-primary:hover {
+            background: var(--primary-dark)
+        }
+
+        .ml-secondary {
+            border: 1px solid var(--surface-light);
+            color: var(--muted)
+        }
+
+        .ml-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary)
+        }
+
+        /* ── Features ── */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 1.25rem;
+            margin-top: 2.5rem
+        }
+
+        .feat {
+            background: var(--surface);
+            padding: 1.4rem;
+            border-radius: var(--radius);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, .05);
+            transition: var(--ease)
+        }
+
+        .feat:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, .15)
+        }
+
+        .feat-icon {
+            font-size: 1.9rem;
+            margin-bottom: .6rem
+        }
+
+        .feat-title {
+            font-size: .95rem;
+            font-weight: 600;
+            margin-bottom: .3rem
+        }
+
+        .feat-desc {
+            font-size: .82rem;
+            color: var(--muted)
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--muted);
+            font-size: .85rem
+        }
+
+        /* jQuery UI override */
         .ui-autocomplete {
             background: var(--surface);
             border: 1px solid var(--surface-light);
-            border-radius: var(--border-radius);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            max-height: 300px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+            max-height: 280px;
             overflow-y: auto;
-            padding: 0.5rem 0;
-            font-family: inherit;
-        }
-
-        .ui-menu-item {
-            padding: 0;
+            padding: .4rem 0;
+            font-family: inherit
         }
 
         .ui-menu-item-wrapper {
-            padding: 0.75rem 1.25rem;
-            color: var(--text-primary);
+            padding: .65rem 1.1rem;
+            color: var(--text);
             cursor: pointer;
-            transition: var(--transition);
-            border: none;
+            transition: var(--ease);
+            border: none !important
         }
 
         .ui-menu-item-wrapper:hover,
         .ui-state-active {
             background: var(--surface-light) !important;
             border: none !important;
-            color: var(--text-primary) !important;
-            margin: 0 !important;
+            color: var(--text) !important;
+            margin: 0 !important
         }
 
-        /* Features Section */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-top: 3rem;
-        }
+        @media(max-width:640px) {
 
-        .feature-card {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: var(--border-radius);
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: var(--transition);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary-color);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
-        }
-
-        .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .feature-title {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .feature-description {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 2rem 1rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        /* Animations */
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        /* Loading State */
-        .search-button.loading {
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        .search-button.loading::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-left: -8px;
-            margin-top: -8px;
-            border: 2px solid white;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Model Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.98);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .loading-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .loading-content {
-            text-align: center;
-            padding: 2rem;
-            max-width: 400px;
-        }
-
-        .loading-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            animation: bounce 1s ease-in-out infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .loading-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--text-primary);
-        }
-
-        .loading-subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-        }
-
-        .progress-container {
-            width: 100%;
-            height: 8px;
-            background: var(--surface);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 1rem;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            border-radius: 10px;
-            transition: width 0.3s ease-out;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .progress-text {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(99, 102, 241, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 0.8s linear infinite;
-            margin-left: 0.5rem;
-            vertical-align: middle;
-        }
-
-        /* Main content hidden during loading */
-        .main-content {
-            opacity: 0;
-            transition: opacity 0.5s ease-in;
-        }
-
-        .main-content.visible {
-            opacity: 1;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .search-card {
-                padding: 1.5rem;
+            .card,
+            .genre-card {
+                padding: 1.4rem
             }
 
-            .features {
-                grid-template-columns: 1fr;
-            }
-
-            .loading-content {
-                padding: 1.5rem;
-            }
-
-            .loading-icon {
-                font-size: 3rem;
-            }
-
-            .loading-title {
-                font-size: 1.25rem;
+            .mini-grid {
+                grid-template-columns: 1fr
             }
         }
     </style>
 </head>
+
 <body>
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-content">
-            <div class="loading-icon">🎬</div>
-            <h2 class="loading-title">Loading Movie Database</h2>
-            <p class="loading-subtitle">Please wait while we prepare your recommendations</p>
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+
+    <!-- Loading overlay -->
+    <div class="overlay" id="overlay">
+        <div class="overlay-box">
+            <div class="overlay-icon">🎬</div>
+            <h2>Loading Movie Database</h2>
+            <p>Preparing your recommendation engine…</p>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
             </div>
-            <p class="progress-text">
-                <span id="progressText">0%</span>
-                <span class="loading-spinner"></span>
-            </p>
+            <p class="progress-label"><span id="progressTxt">0%</span><span class="spinner"></span></p>
         </div>
     </div>
 
-    <div class="background-animation"></div>
+    <div class="bg-anim"></div>
 
-    <div class="main-content" id="mainContent">
-    <header class="header">
-        <h1>Movie Recommendation System</h1>
-        <p class="subtitle">Discover your next favorite movie powered by AI</p>
-        <div class="stats">
-            <span class="stats-dot"></span>
-            <span>{{ total_movies|default:"2,000" }}+ movies available</span>
-        </div>
-    </header>
+    <div class="main-wrap" id="mainWrap">
+        <header>
+            <h1>🎬 Movie Recommender</h1>
+            <p class="subtitle">Discover your next favourite film, powered by AI</p>
+            <div class="stats">
+                <span class="dot"></span>
+                <span>{{ total_movies|default:"0" }}+ movies available</span>
+            </div>
+        </header>
 
-    <main class="container">
-        <div class="search-card">
-            <label for="movie_name" class="search-label">
-                🎬 Search for a movie
-            </label>
-            
-            <form method="POST" id="searchForm">
-                {% csrf_token %}
-                <div class="search-container">
-                    <input 
-                        type="text" 
-                        id="movie_name" 
-                        name="movie_name"
-                        class="search-input"
-                        placeholder="Start typing a movie name..."
-                        value="{{ input_movie_name|default:'' }}"
-                        required
-                        autocomplete="off"
-                    >
+        <main class="container">
+
+            <!-- ── Title search ── -->
+            <div class="card">
+                <label class="card-label">Search by movie title</label>
+                <form method="POST" id="searchForm">
+                    {% csrf_token %}
+                    <input type="text" id="movie_name" name="movie_name" class="input"
+                        placeholder="Start typing a movie name…" value="{{ input_movie_name|default:'' }}"
+                        autocomplete="off" required>
+                    <button type="submit" class="btn" id="searchBtn">Get Recommendations</button>
+                </form>
+
+                {% if error_message %}
+                <div class="alert alert-error">⚠️ &nbsp;<strong>{{ error_message }}</strong></div>
+                {% endif %}
+
+                {% if fuzzy_suggestions %}
+                <div class="suggestions-box">
+                    <h3>Did you mean…</h3>
+                    <div class="suggestion-chips">
+                        {% for s in fuzzy_suggestions %}
+                        <a class="chip" href="?q={{ s.title|urlencode }}"
+                            onclick="document.getElementById('movie_name').value='{{ s.title|escapejs }}';document.getElementById('searchForm').submit();return false;">
+                            {{ s.title }}<span class="score">{{ s.score }}%</span>
+                        </a>
+                        {% endfor %}
+                    </div>
                 </div>
-                
-                <button type="submit" class="search-button" id="searchButton">
-                    Get Recommendations
-                </button>
-            </form>
+                {% endif %}
+            </div>
 
-            {% if error_message %}
-            <div class="alert alert-error">
-                <span class="alert-icon">⚠️</span>
-                <strong>{{ error_message }}</strong>
+            <!-- ── Genre search ── -->
+            {% if all_genres %}
+            <div class="divider">or search by genre</div>
+
+            <div class="genre-card">
+                <h2>🎭 Browse by Genre</h2>
+                <div class="genre-filters" id="genreChips">
+                    {% for g in all_genres %}
+                    <button class="genre-btn" data-genre="{{ g }}">{{ g }}</button>
+                    {% endfor %}
+                </div>
+                <div class="rating-row">
+                    <label>Min rating:</label>
+                    <select id="minRating">
+                        <option value="0">Any</option>
+                        <option value="5">5+</option>
+                        <option value="6">6+</option>
+                        <option value="7">7+</option>
+                        <option value="8">8+</option>
+                    </select>
+                    <label style="margin-left:auto;color:var(--primary);font-size:.85rem"
+                        id="selectedGenreLabel"></label>
+                </div>
+                <button class="btn-genre" id="genreSearchBtn" disabled>Select a genre above</button>
+
+                <div id="genreResults">
+                    <h3 id="genreResultsTitle"></h3>
+                    <div class="mini-grid" id="genreGrid"></div>
+                </div>
             </div>
             {% endif %}
-        </div>
 
-        <div class="features">
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
-                <h3 class="feature-title">AI-Powered</h3>
-                <p class="feature-description">Advanced algorithms analyze movie similarities</p>
+            <div class="features">
+                <div class="feat">
+                    <div class="feat-icon">🤖</div>
+                    <h3 class="feat-title">AI-Powered</h3>
+                    <p class="feat-desc">SVD + TF-IDF content similarity</p>
+                </div>
+                <div class="feat">
+                    <div class="feat-icon">⚡</div>
+                    <h3 class="feat-title">Instant</h3>
+                    <p class="feat-desc">On-demand similarity, no huge matrix</p>
+                </div>
+                <div class="feat">
+                    <div class="feat-icon">🌍</div>
+                    <h3 class="feat-title">86K+ Movies</h3>
+                    <p class="feat-desc">International &amp; Indian cinema included</p>
+                </div>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3 class="feature-title">Lightning Fast</h3>
-                <p class="feature-description">Get recommendations in milliseconds</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3 class="feature-title">Accurate</h3>
-                <p class="feature-description">Personalized suggestions just for you</p>
-            </div>
-        </div>
-    </main>
+        </main>
 
-    <footer class="footer">
-        <p>
-            Made with ❤️ for movie lovers | © <span id="currentYear"></span> Movie Recommendation System
-        </p>
-    </footer>
+        <footer>
+            <p>Made with ❤️ for movie lovers &nbsp;|&nbsp; © <span id="yr"></span> Movie Recommendation System</p>
+        </footer>
     </div>
+
     <script>
-        // Model Loading Progress
-        let loadingInterval;
-        let checkCount = 0;
-        
-        function checkModelStatus() {
-            fetch('/api/model-status/')
-                .then(response => response.json())
-                .then(data => {
-                    const progressBar = document.getElementById('progressBar');
-                    const progressText = document.getElementById('progressText');
-                    const overlay = document.getElementById('loadingOverlay');
-                    const mainContent = document.getElementById('mainContent');
-                    
-                    checkCount++;
-                    
-                    if (data.loaded) {
-                        // Model is loaded
-                        progressBar.style.width = '100%';
-                        progressText.textContent = '100%';
-                        
+        // ── Loading progress ──────────────────────────────────────────────────────────
+        (function () {
+            let iv, n = 0;
+            function check() {
+                fetch('/api/model-status/').then(r => r.json()).then(d => {
+                    const fill = document.getElementById('progressFill');
+                    const txt = document.getElementById('progressTxt');
+                    n++;
+                    if (d.loaded) {
+                        fill.style.width = '100%'; txt.textContent = '100%';
                         setTimeout(() => {
-                            overlay.classList.add('hidden');
-                            mainContent.classList.add('visible');
-                            clearInterval(loadingInterval);
+                            document.getElementById('overlay').classList.add('hidden');
+                            document.getElementById('mainWrap').classList.add('visible');
+                            clearInterval(iv);
                         }, 500);
-                    } else if (data.status === 'error') {
-                        // Error loading model
-                        progressText.textContent = 'Error: ' + (data.error || 'Failed to load');
-                        clearInterval(loadingInterval);
+                    } else if (d.status === 'error') {
+                        txt.textContent = 'Error: ' + (d.error || 'load failed');
+                        clearInterval(iv);
                     } else {
-                        // Update progress
-                        progressBar.style.width = data.progress + '%';
-                        progressText.textContent = data.progress + '%';
-                        
-                        // Adjust polling frequency based on progress
-                        if (data.progress > 0 && checkCount > 5) {
-                            // Once we see progress, check more frequently
-                            clearInterval(loadingInterval);
-                            loadingInterval = setInterval(checkModelStatus, 200);
-                        }
+                        fill.style.width = d.progress + '%'; txt.textContent = d.progress + '%';
+                        if (d.progress > 0 && n > 4) { clearInterval(iv); iv = setInterval(check, 200); }
                     }
-                })
-                .catch(error => {
-                    console.error('Error checking model status:', error);
-                    checkCount++;
-                    // Only give up after multiple failures
-                    if (checkCount > 20) {
-                        const overlay = document.getElementById('loadingOverlay');
-                        const mainContent = document.getElementById('mainContent');
-                        overlay.classList.add('hidden');
-                        mainContent.classList.add('visible');
-                        clearInterval(loadingInterval);
-                    }
-                });
-        }
+                }).catch(() => { if (++n > 25) { document.getElementById('overlay').classList.add('hidden'); document.getElementById('mainWrap').classList.add('visible'); clearInterval(iv); } });
+            }
+            check(); iv = setInterval(check, 300);
+        })();
 
-        // Start checking model status immediately
-        checkModelStatus();
-        loadingInterval = setInterval(checkModelStatus, 300);
-        
-        // Set dynamic year in footer
-        document.addEventListener('DOMContentLoaded', function() {
-            var currentYear = new Date().getFullYear();
-            document.getElementById("currentYear").textContent = currentYear;
-        });
-    </script>
+        document.getElementById('yr').textContent = new Date().getFullYear();
 
-    <script>
-        $(function() {
-            // Autocomplete configuration
-            var movieNames = [
-                {% for movie in all_movie_names %}
-                "{{ movie|escapejs }}",
-                {% endfor %}
-            ];
-
+        // ── Autocomplete — uses API instead of embedding 40K names in HTML ────────────
+        $(function () {
             $("#movie_name").autocomplete({
-                source: movieNames,
+                source: function (req, res) {
+                    $.getJSON('/api/search/', { q: req.term }, function (data) {
+                        res(data.movies || []);
+                    });
+                },
                 minLength: 2,
-                delay: 300,
-                select: function(event, ui) {
-                    $(this).val(ui.item.value);
-                    return false;
-                }
+                delay: 200,
+                select: function (e, ui) { $(this).val(ui.item.value); return false; }
             });
-
-            // Form submission with loading state
-            $('#searchForm').on('submit', function() {
-                var button = $('#searchButton');
-                button.addClass('loading');
-                button.text('Searching...');
+            $('#searchForm').on('submit', function () {
+                $('#searchBtn').text('Searching…').prop('disabled', true);
             });
-
-            // Auto-focus on load
             $('#movie_name').focus();
+        });
+
+        // ── Genre search ──────────────────────────────────────────────────────────────
+        let selectedGenre = null;
+
+        document.querySelectorAll('.genre-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedGenre = this.dataset.genre;
+                document.getElementById('selectedGenreLabel').textContent = selectedGenre;
+                document.getElementById('genreSearchBtn').disabled = false;
+                document.getElementById('genreSearchBtn').textContent = 'Show ' + selectedGenre + ' Movies';
+            });
+        });
+
+        document.getElementById('genreSearchBtn')?.addEventListener('click', function () {
+            if (!selectedGenre) return;
+            const minR = document.getElementById('minRating').value;
+            this.textContent = 'Loading…'; this.disabled = true;
+
+            fetch(`/api/genre-search/?genre=${encodeURIComponent(selectedGenre)}&n=24&min_rating=${minR}`)
+                .then(r => r.json())
+                .then(data => {
+                    const grid = document.getElementById('genreGrid');
+                    const results = document.getElementById('genreResults');
+                    const title = document.getElementById('genreResultsTitle');
+                    grid.innerHTML = '';
+                    if (!data.movies || data.movies.length === 0) {
+                        grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1">No movies found for this filter.</p>';
+                    } else {
+                        title.textContent = `Top ${data.movies.length} ${selectedGenre} movies`;
+                        data.movies.forEach(m => {
+                            const imdbBtn = m.imdb_link ? `<a href="${m.imdb_link}" target="_blank" class="mini-link ml-secondary">⭐ IMDb</a>` : '';
+                            grid.innerHTML += `
+                    <div class="mini-card">
+                        <div class="mini-title">${m.title}</div>
+                        <div class="mini-meta">
+                            <span>⭐ ${m.rating} &nbsp;(${m.votes} votes)</span>
+                            <span>📅 ${m.release_date}</span>
+                            <span>🎭 ${m.genres}</span>
+                        </div>
+                        <div class="mini-actions">
+                            <a href="${m.google_link}" target="_blank" class="mini-link ml-primary">🔍 Google</a>
+                            ${imdbBtn}
+                        </div>
+                    </div>`;
+                        });
+                    }
+                    results.style.display = 'block';
+                    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                })
+                .catch(() => { alert('Genre search failed. Is the server running?'); })
+                .finally(() => {
+                    this.disabled = false;
+                    this.textContent = 'Show ' + selectedGenre + ' Movies';
+                });
         });
     </script>
 </body>
+
 </html>
